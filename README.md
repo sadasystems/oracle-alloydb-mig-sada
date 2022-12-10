@@ -38,7 +38,8 @@ Striim adapters:
 |Memory|32 GB|32 GB|15 GB|
 |Data disk|SSD - 300 GB|Default|30 GB|
 |OS|CentOS 7|Default|CentOS 7|
-|Cluster|Standalone - LQDB|Primary Instance - oracle2postgres||
+|Cluster|Standalone - LQDB|Primary Instance - oracle2postgres|NA|
+|Instance name|instance-oradb | cluster > alloydb-poc |  instance-striim|
 
 > **NOTE:** In Oracle database we are going to use the existing schema **HR** for testing.
 
@@ -48,16 +49,15 @@ Striim adapters:
     -   Target database JDBC port (5432)
 
 ## Implmentation Guide:
-- [Step-1](#1.-Connectivity-(-Oracle-/Striim-/-AlloyDB)) Connectivity ( Oracle /Striim / AlloyDB)
-- [Step-2](#2.-Preparing-source-database---Oracle) Preparing source database - Oracle
-- [Step-3](#3.-Preparing-Striim-Instance) Preparing Striim Instance
-- [Step-4](#4.-Schema-conversion-to-Alloy-DB) Schema conversion to Alloy DB
-- [Step-5](#5.-Preparing-target-database---AlloyDB) Preparing target database - AlloyDB 
-- [Step-6](#6.-Initial-Oracle-database-load-to-AlloyDB) Initial Oracle database load to AlloyDB 
-- [Step-7](#7.-Continuously-replication-CDC---Oracle-to-Alloy-DB) Continuously replication CDC - Oracle to Alloy DB 
-- [Step-8](#8.-Promote-the-Target-AlloyDB-database-(cut-over)) Promote the Target AlloyDB database (cut-over) 
-- [Step-9](#9.-Load-Testing-and-Benchmarking-Tool) Load Testing and Benchmarking Tool 
-
+- [Step-1](#1-connectivity-oracle-striim-alloydb) Connectivity ( Oracle /Striim / AlloyDB)
+- [Step-2](#2-preparing-source-database---oracle) Preparing source database - Oracle
+- [Step-3](#3-preparing-striim-instance) Preparing Striim Instance
+- [Step-4](#4-schema-conversion-to-alloydb) Schema conversion to Alloy DB
+- [Step-5](#5-preparing-target-database---alloydb) Preparing target database - AlloyDB 
+- [Step-6](#6-initial-oracle-database-load-to-alloydb) Initial Oracle database load to AlloyDB 
+- [Step-7](#7-continuously-replication-cdc---oracle-to-alloydb) Continuously replication CDC - Oracle to AlloyDB 
+- [Step-8](#8-promote-the-target-alloydb-database-cut-over) Promote the Target AlloyDB database (cut-over) 
+- [Step-9](#9-load-testing-and-benchmarking-tool) Load Testing and Benchmarking Tool 
 
 
 ## 1. Connectivity ( Oracle /Striim / AlloyDB)
@@ -97,35 +97,23 @@ a.  Connectivity Test through telnet
     i.  From instance-striim to instance-oracle
 ```
 [saurabh_patel@instance-striim ~]$ telnet xx.xx.xx.xx 1521
-Trying 172.16.1.213...
-Connected to 172.16.1.213.
-Escape character is '^]'.
-quit
-Connection closed by foreign host.
-[saurabh_patel@instance-striim ~]$ 
+Trying xx.xx.xx.xx...
+Connected to xx.xx.xx.xx.
 
 ```
 ii. From instance-oracle to instance-striim
 ```
 [saurabh_patel@instance-oradb ~]$ telnet xx.xx.xx.xx 22
-Trying 172.16.1.234...
-Connected to 172.16.1.234.
-Escape character is '^]'.
-SSH-2.0-OpenSSH_7.4
-^]
-telnet>
+Trying xx.xx.xx.xx...
+Connected to xx.xx.xx.xx.
 ```
 
 iii. From Instance-striim to AlloyDB. AlloyDB listens on port 5432
 
 ```
 saurabh_patel@instance-striim ~]$ telnet xx.xx.xx.xx 5432
-Trying 10.59.112.2...
-Connected to 10.59.112.2.
-Escape character is '^]'.
-^CConnection closed by foreign host.
-[saurabh_patel@instance-striim ~]$ 
-
+Trying xx.xx.xx.xx...
+Connected to xx.xx.xx.xx.
 ```
 
 ## 2. Preparing source database - Oracle
@@ -269,7 +257,7 @@ d.  Clone the repository in the home directory
 ```
 e.  Change directory to 
 ```sh
-    cd striim-installs/install/ .
+    cd oracle-alloydb-mig-sada/install/ .
 ```
 f.  Execute striim-install.sh script 
 ```sh
@@ -354,7 +342,7 @@ ProductKey: xx-xx-xx
 License Key: xx-xx-xx-xx-xx-xx
 License expires in 30 days 12 hours 56 minutes 53 seconds
 Servers in cluster: 
-  [this] S172_16_1_234 [8ef147e0-47bc-4e9d-a815-1b6aae6dc26f] 
+  [this] Sxx_xx_xx_xx [8ef147e0-47bc-4e9d-a815-1b6aae6dc26f] 
  
 started.
 Please go to http://xx.xx.xx.xx:9080 or https://xx.xx.xx.xx:9081 to administer, or use console
@@ -362,7 +350,7 @@ Please go to http://xx.xx.xx.xx:9080 or https://xx.xx.xx.xx:9081 to administer, 
 
 ```
 
-> **NOTE** TQL File location = /striim-installs/install/oraalloydb_1.tql
+> **NOTE** TQL File location = oracle-alloydb-mig-sada/install/oraalloydb_1.tql
 
 - Created the windows VM to access the striim application console.
 
@@ -383,7 +371,7 @@ Please go to http://xx.xx.xx.xx:9080 or https://xx.xx.xx.xx:9081 to administer, 
         ![](images/sada-ora-striim-alloydb-poc.001.png)
 
 
-## 4. Schema conversion to Alloy DB 
+## 4. Schema conversion to AlloyDB 
 
 Striim typically requires that the target database contains
 corresponding tables with the correct schema. Striim only transfers data
@@ -558,7 +546,7 @@ hr=>
 ```
 > **NOTE** For reference CDC TQL File = **install/ora_alloydb_initialload_sample.tql**
 
-## 7. Continuously replication CDC - Oracle to Alloy DB
+## 7. Continuously replication CDC - Oracle to AlloyDB
 
 After the initial load we need to create a separate pipeline to replicate changes to Alloy DB from the source Oracle database. We will be using the SCN during the initial load setup.
 
