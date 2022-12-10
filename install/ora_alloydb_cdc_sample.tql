@@ -1,0 +1,50 @@
+
+CREATE APPLICATION ora_alloydb_cdc RECOVERY 5 SECOND INTERVAL USE EXCEPTIONSTORE TTL : '7d' ;
+
+CREATE OR REPLACE SOURCE ora_cdc USING Global.OracleReader ( 
+  Password_encrypted: 'true', 
+  SupportPDB: false, 
+  QuiesceMarkerTable: 'QUIESCEMARKER', 
+  CommittedTransactions: true, 
+  QueueSize: 2048, 
+  SetConservativeRange: false, 
+  TransactionBufferType: 'Disk', 
+  OnlineCatalog: true, 
+  StartSCN: '16737558', 
+  TransactionBufferDiskLocation: '.striim/LargeBuffer', 
+  adapterName: 'OracleReader', 
+  DatabaseRole: 'PRIMARY', 
+  Compression: false, 
+  connectionRetryPolicy: 'timeOut=30, retryInterval=30, maxRetries=3', 
+  CDDLAction: 'Process', 
+  Tables: 'HR.REGIONS;HR.LOCATIONS;HR.JOB_HISTORY;HR.JOBS;HR.EMPLOYEES;HR.DEPARTMENTS;', 
+  DictionaryMode: 'OnlineCatalog', 
+  Username: 'striim', 
+  ConnectionURL: 'jdbc:oracle:thin:@172.16.1.213:1521:LQDB', 
+  CDDLCapture: false, 
+  FetchSize: 10000, 
+  TransactionBufferSpilloverSize: '100MB', 
+  FilterTransactionBoundaries: true, 
+  SendBeforeImage: true, 
+  Password: 'KAOHX9WXCRSV32j3PL5leQ==' ) 
+OUTPUT TO alloystream_cdc;
+
+CREATE OR REPLACE TARGET alloydb_cdc USING Global.DatabaseWriter ( 
+  ConnectionRetryPolicy: 'retryInterval=30, maxRetries=3', 
+  Password: 'Wva52pobyyVpQmDGhFdMeA==', 
+  BatchPolicy: 'EventCount:10000,Interval:60', 
+  CommitPolicy: 'EventCount:10000,Interval:60', 
+  ConnectionURL: 'jdbc:postgresql://10.59.112.2:5432/hr', 
+  CheckPointTable: 'CHKPOINT', 
+  Password_encrypted: 'true', 
+  CDDLAction: 'Process', 
+  StatementCacheSize: '50', 
+  DatabaseProviderType: 'Default', 
+  PreserveSourceTransactionBoundary: 'false', 
+  Username: 'postgres', 
+  Tables: 'HR.%,HR.%;', 
+  adapterName: 'DatabaseWriter' ) 
+INPUT FROM alloystream_cdc;
+
+END APPLICATION ora_alloydb_cdc;
+

@@ -1,0 +1,34 @@
+
+CREATE APPLICATION ora_alloydb_initialload;
+
+CREATE OR REPLACE SOURCE ora_1 USING Global.DatabaseReader ( 
+  Password: 'ySY0FAmi7jvnIgRtXEjloQ==', 
+  DatabaseProviderType: 'Default', 
+  QuiesceOnILCompletion: true, 
+  adapterName: 'DatabaseReader', 
+  Username: 'striim', 
+  FetchSize: 10000, 
+  Password_encrypted: 'true', 
+  ConnectionURL: 'jdbc:oracle:thin:hr/hr@172.16.1.213:1521:LQDB', 
+  Tables: 'HR.REGIONS;HR.LOCATIONS;HR.JOB_HISTORY;HR.JOBS;HR.EMPLOYEES;HR.DEPARTMENTS;' ) 
+OUTPUT TO alloystream_1;
+
+CREATE OR REPLACE TARGET alloydb_1 USING Global.DatabaseWriter ( 
+  ParallelThreads: '4', 
+  ConnectionRetryPolicy: 'retryInterval=30, maxRetries=3', 
+  Password: 'Wva52pobyyVpQmDGhFdMeA==', 
+  BatchPolicy: 'EventCount:10000,Interval:60', 
+  CommitPolicy: 'EventCount:10000,Interval:60', 
+  ConnectionURL: 'jdbc:postgresql://10.59.112.2:5432/hr', 
+  CheckPointTable: 'CHKPOINT', 
+  Password_encrypted: 'true', 
+  StatementCacheSize: '50', 
+  DatabaseProviderType: 'Default', 
+  PreserveSourceTransactionBoundary: 'false', 
+  Tables: 'HR.%,HR.%;', 
+  Username: 'postgres', 
+  adapterName: 'DatabaseWriter' ) 
+INPUT FROM alloystream_1;
+
+END APPLICATION ora_alloydb_initialload;
+
