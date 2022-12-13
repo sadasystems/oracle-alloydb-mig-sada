@@ -1,28 +1,32 @@
-# oracle-alloydb-mig-sada
-This POC covers migration of Oracle databases to AlloyDB (PostgreSQL) to fulfill the data management use cases for AlloyDB.
+This POC covers in detail the migration steps required to migrate an Oracle database to AlloyDB (PostgreSQL) using Striim - A third party solution that has a validated integration with AlloyDB.
 
 ## Overview
 
-Database migration using Striim has a two-step approach.
+Database migration using Striim has a two-step approach:
 
-Step-1: Full one-time, initial replication of Oracle database dump
+Step-1: Full one-time, initial replication of Oracle database dump.
 
-Step-2: Continuous replication of every transaction at Oracle through CDC (Change data capture)
+Step-2: Continuous replication of every transaction at Oracle through CDC (Change Data Capture)
 
-There are several ways to install the Striim:
+The migration is facilitated by installing the Striim software on a separate server. Within GCP, the Striim server can be created in one of two ways:
 
-- Option-1 :- Use Marketplace
-    - Striim BYOL (Striim Inc VM)
-    - Striim Cloud Enterprise
-    - Striim Subscription
-- Option-2 :- Create Compute Engine instance
-    - Striim (BYOL)
+- Option-1 :- Use a pre-configured Google compute engine instance from the GCP marketplace.
 
->In this POC we are implementing Option-2.
+- Option-2 :- Use a custom Google compute instance engine instance.
+    
+Both options require a license that must be purchased separately.
 
-Striim allows you to connect to Oracle and AlloyDB(PostgreSQL) databases through its built-in adapter in the Striim application or pipeline through the flow designer drag-and-drop interface.
+>For this POC, we chose Option-2.
 
-Striim adapters:
+For this POC, the following GCP services are required:
+- A project to host the GCP services.
+- VPC to host the Oracle and the Striim GCE instance.
+- An AlloyDB cluster with a single instance.
+- Firewall rules for allowing connectivity between the Oracle database server, the Striim server and the AlloyDB instance.
+
+The Oracle database and AlloyDB single instance cluster were set up using using the respective vendor documentation.The Striim server establishes connectivity to Oracle and AlloyDB databases through its built-in adapter in the Striim application or pipeline through the flow designer drag-and-drop interface.
+
+We utilized the following Striim adapters for the POC:
 
 -   Database Reader: Reads data from Oracle source database during initial load.
 -   Oracle Reader: Read data using LogMiner from the oracle database during the CDC replication stage
@@ -30,37 +34,37 @@ Striim adapters:
 
 ## Configuration of Oracle & AlloyDB Instance
 
--   Oracle and Alloy DB Configuration
+-   The following table summarizes the Oracle database, Alloy DB database and Striim server configuration
 
- ||Oracle DB|AlloyDB|Striim Application|
+ ||Oracle DB|AlloyDB Instance|Striim Server|
 | :- | :- | :- | :- |
 |vCPU|4|4|4|
 |Memory|32 GB|32 GB|15 GB|
 |Data disk|SSD - 300 GB|Default|30 GB|
 |OS|CentOS 7|Default|CentOS 7|
-|Cluster|Standalone - LQDB|Primary Instance - oracle2postgres|NA|
-|Instance name|instance-oradb | cluster > alloydb-poc |  instance-striim|
+|Cluster/Database Names|Standalone - LQDB|Primary Instance - oracle2postgres| N/A |
+|GCE instance name|instance-oradb | N/A |  instance-striim|
+
 
 > **NOTE:** In Oracle database we are going to use the existing schema **HR** for testing.
 
 - Firewall: the following ports must be open for communication with Striim
-    -   Source database JDBC port (1521)
-    -   on the node running the web UI, port 9080 (http) and/or 9081 (https) for TCP
-    -   Target database JDBC port (5432)
+    -   Source Oracle database: port tcp/1521
+    -   Striim server running the web UI: port tcp/9080 (http) and/or tcp/9081 (https)
+    -   Target AlloyDB instance: port tcp/5432
 
 ## Implmentation Guide:
-- [Step-1](#1-connectivity-oracle-striim-alloydb) Connectivity ( Oracle /Striim / AlloyDB)
-- [Step-2](#2-preparing-source-database---oracle) Preparing source database - Oracle
-- [Step-3](#3-preparing-striim-instance) Preparing Striim Instance
+- [Step-1](#1-connectivity-oracle-striim-alloydb) Connectivity ( Oracle <-> Striim <-> AlloyDB)
+- [Step-2](#2-preparing-source-database---oracle) Preparing the source Oracle database
+- [Step-3](#3-preparing-striim-gce-instance) Preparing Striim GCE instance
 - [Step-4](#4-schema-conversion-to-alloydb) Schema conversion to Alloy DB
-- [Step-5](#5-preparing-target-database---alloydb) Preparing target database - AlloyDB 
+- [Step-5](#5-preparing-target-database---alloydb) Preparing target AlloyDB database 
 - [Step-6](#6-initial-oracle-database-load-to-alloydb) Initial Oracle database load to AlloyDB 
 - [Step-7](#7-continuously-replication-cdc---oracle-to-alloydb) Continuously replication CDC - Oracle to AlloyDB 
 - [Step-8](#8-promote-the-target-alloydb-database-cut-over) Promote the Target AlloyDB database (cut-over) 
-- [Step-9](#9-load-testing-and-benchmarking-tool) Load Testing and Benchmarking Tool 
 
 
-## 1. Connectivity ( Oracle /Striim / AlloyDB)
+## 1. Connectivity ( Oracle <-> Striim <-> AlloyDB)
 
 ### Connection to Oracle Instance.
 
@@ -225,7 +229,7 @@ Prepare the Oracle database:- [https://www.striim.com/docs/en/basic-oracle-confi
     Capture this number. You\'ll need it later in the CDC replication
     pipeline steps.
 
-## 3. Preparing Striim Instance
+## 3. Preparing Striim GCE instance
 
 Perform the following steps on each Striim server that runs an Oracle
 Reader adapter:
@@ -674,19 +678,3 @@ To cut-over to AlloyDB.
     - Stop the application
     - Undeploy the application
 - Point Application to AlloyDB.
-
-
-## 9. Load Testing and Benchmarking Tool
-
-HammerDB Is an open source tool Load Testing and Benchmarking Tool which
-supports both Oracle and AlloyDB(PostgreSQL) databases.
-
-[[https://www.hammerdb.com/index.html]{.underline}](https://www.hammerdb.com/index.html)
-
-It works on TPC-C OLTP real-time complex warehouse workload.
-
-**The download of HammerDB -** Download the windows installer on
-installed it on Windows VM.
-
-[[https://www.hammerdb.com/download.html]{.underline}](https://www.hammerdb.com/download.html)
-
